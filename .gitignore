@@ -5,3 +5,7 @@
 .DS_Store
 __pycache__/
 *.swp
+IM Model differential (DCR-CS).ipynb
+IM Model integral Multimode.ipynb
+IM Model integral SingleMode.ipynb
+IM_Tumbling Model integral Multimode.ipynb
