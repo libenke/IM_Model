@@ -23,7 +23,7 @@ def S_integral(Q_span,δt,t,τd_span):
     S = S_0_t + np.exp(-np.sum(1/τd_span)*δt) * Q_span[-1,:,:]
     return S
 
-def IM_Multimode_integral(λmax = 3.34, τR = 0.124, shear_rate = 31.6, δt = 0.001, finish_time = 10, \
+def IM_Multimode_integral(λmax = 3.34, τR = 0.124, shear_rate = 31.6, β = 0.25, δt = 0.001, finish_time = 10, \
             Gi = np.array([1.14E2, 2.52, 8.80E-1, 3.81E-1, 2.07E-1, 1.70E-1, 1.76E-1, 1.37E-1, 2.03E-1]), \
             τi_eq = np.array([2.16E-3, 5.90E-2, 3.33E-1, 1.53, 6.87, 2.9E1, 1.11E2, 3.63E2, 8.92E2]), CQ = 6):
     """
@@ -42,6 +42,7 @@ def IM_Multimode_integral(λmax = 3.34, τR = 0.124, shear_rate = 31.6, δt = 0.
     λ_span = np.zeros(len(t_span)) # λ
     σ_span = np.zeros([len(t_span),3,3]) # σ stress
     τi_t = np.zeros_like(τi_eq) #τi at time t
+    r = 0 # tube loss rate
     for ind,t in enumerate(t_span):
         #initial the value at time = 0s 
         if ind == 0:
@@ -50,9 +51,9 @@ def IM_Multimode_integral(λmax = 3.34, τR = 0.124, shear_rate = 31.6, δt = 0.
             for i in np.arange(len(τi_eq)):
                 Si_span[i,0,:,:] = np.eye(3)/3
                 if τi_eq[i] > τR:
-                    τi_span[i,0] = τi_eq[i]/2  + τR
+                    τi_span[i,0] = τi_eq[i]  + τR
                 else:
-                    τi_span[i,0] = τi_eq[i]/2
+                    τi_span[i,0] = τi_eq[i]
             τd_span[0] = np.sum(Gi * τi_span[:,0]**2)/np.sum(Gi * τi_span[:,0])
             λ_span[0] = 1
             for i in np.arange(len(τi_eq)):
@@ -73,9 +74,9 @@ def IM_Multimode_integral(λmax = 3.34, τR = 0.124, shear_rate = 31.6, δt = 0.
             #Si at time t
             Si_t = Si_span[i,ind-1,:,:]
             if τi_eq[i] > τR:
-                τi_t[i] = 1/2/(1/τi_eq[i] + np.trace(np.dot(κ,Si_t))) + τR
+                τi_t[i] = 1/(1/τi_eq[i] + β*r) + τR
             else:
-                τi_t[i] = 1/2/(1/τi_eq[i] + np.trace(np.dot(κ,Si_t)))
+                τi_t[i] = 1/(1/τi_eq[i] + β*r)
             #Si at time t update
             Si_t_update = S_integral(Q_span[:ind,:,:],δt,t,τi_span[i,:ind])
             Si_span[i,ind,:,:] = Si_t_update
@@ -92,6 +93,7 @@ def IM_Multimode_integral(λmax = 3.34, τR = 0.124, shear_rate = 31.6, δt = 0.
         dλ_dt = λ * np.trace(np.dot(κ,S_average_t_update)) - (λ * Fλ - 1) / τR
         λ_update = λ + dλ_dt * δt
         λ_span[ind] = λ_update
+        r =  np.trace(np.dot(κ,S_average_t_update)) - 1/λ_update*dλ_dt # update r, tube loss rate
         Fλ_update = (λmax**2 - λ_update**2/3)/(λmax**2 - λ_update**2)*(λmax**2 - 1)/(λmax**2 - 1/3)
         σ_update = np.zeros([3,3])
         for i in np.arange(len(τi_eq)):
@@ -100,7 +102,7 @@ def IM_Multimode_integral(λmax = 3.34, τR = 0.124, shear_rate = 31.6, δt = 0.
     return t_span, τd_span, σ_span, λ_span, S_average_span
 
 
-def IM_SingleMode_integral(λmax = 3.34, τR = 0.124, shear_rate = 31.6, δt = 0.001, \
+def IM_SingleMode_integral(λmax = 3.34, τR = 0.124, shear_rate = 31.6, β = 0.25, δt = 0.001, \
                            finish_time = 10, GN0 = 2.79E5, τd_eq = 0.8):
     """
     return: t_span, τd_span, σ_span, λ_span, S_span
@@ -116,12 +118,13 @@ def IM_SingleMode_integral(λmax = 3.34, τR = 0.124, shear_rate = 31.6, δt = 0
     τd_span = np.zeros(len(t_span)) # tau_d
     λ_span = np.zeros(len(t_span)) # λ
     σ_span = np.zeros([len(t_span),3,3]) # σ stress
+    r = 0 # tube loss rate
     for ind,t in enumerate(t_span):
         # initial the value at time = 0s 
         if ind == 0:
             Q_span[0,:,:] = np.eye(3)/3
             S_span[0,:,:] = np.eye(3)/3
-            τd_span[0] = τd_eq/2 + τR
+            τd_span[0] = τd_eq + τR
             λ_span[0] = 1
             σ_span[0,:,:] = 3 * GN0 * np.eye(3)/3
             continue
@@ -138,7 +141,7 @@ def IM_SingleMode_integral(λmax = 3.34, τR = 0.124, shear_rate = 31.6, δt = 0
         # calculate the τd(t)
         # S at time t
         S_t = S_span[ind-1,:,:]
-        τd_t = 1/2/(1/τd_eq + np.trace(np.dot(κ,S_t))) + τR
+        τd_t = 1/(1/τd_eq + β*r) + τR
         τd_span[ind] = τd_t
         #S at time t update
         S_update = S_integral(Q_span[:ind+1,:,:],δt,t,τd_span[:ind+1])
@@ -150,6 +153,7 @@ def IM_SingleMode_integral(λmax = 3.34, τR = 0.124, shear_rate = 31.6, δt = 0
         dλ_dt = λ * np.trace(np.dot(κ,S_update)) - (λ * Fλ - 1) / τR
         λ_update = λ + dλ_dt * δt
         λ_span[ind] = λ_update
+        r =  np.trace(np.dot(κ,S_update)) - 1/λ_update*dλ_dt # update r, tube loss rate
         Fλ_update = (λmax**2 - λ_update**2/3)/(λmax**2 - λ_update**2) * (λmax**2 - 1)/(λmax**2 - 1/3)
         σ_update = 3 * GN0 * Fλ_update * λ_update**2 * S_update
         σ_span[ind] = σ_update
@@ -209,7 +213,7 @@ def IM_SingleMode_differential(λmax = 3.34, τR = 0.124, shear_rate = 31.6, δt
     return t_span, τd_span, σ_span, λ_span, S_span
 
 
-def IM_Tumbling_Multimode_integral(λmax = 3.34, τR = 0.124, shear_rate = 31.6, δt = 0.001, finish_time = 10, \
+def IM_Tumbling_Multimode_integral(λmax = 3.34, τR = 0.124, shear_rate = 31.6, β = 0.25, δt = 0.001, finish_time = 10, \
                 Gi = np.array([1.14E2, 2.52, 8.80E-1, 3.81E-1, 2.07E-1, 1.70E-1, 1.76E-1, 1.37E-1, 2.03E-1]), \
                 τi_eq = np.array([2.16E-3, 5.90E-2, 3.33E-1, 1.53, 6.87, 2.9E1, 1.11E2, 3.63E2, 8.92E2]), CQ = 6):
     """
@@ -231,8 +235,9 @@ def IM_Tumbling_Multimode_integral(λmax = 3.34, τR = 0.124, shear_rate = 31.6,
     τi_t = np.zeros_like(τi_eq) #τi at time t
     WiR = τR * shear_rate
     ω = WiR**(-0.2)/(8 * np.pi) * shear_rate
-    β = WiR**(-0.2)/8 * shear_rate
-    φ_span = np.cos(2 * np.pi * ω * t_span) * np.exp( - β * t_span)
+    β_angle = WiR**(-0.2)/8 * shear_rate
+    φ_span = np.cos(2 * np.pi * ω * t_span) * np.exp( - β_angle * t_span)
+    r = 0 # tube loss rate
     for ind,t in enumerate(t_span):
         #initial the value at time = 0s 
         if ind == 0:
@@ -241,9 +246,9 @@ def IM_Tumbling_Multimode_integral(λmax = 3.34, τR = 0.124, shear_rate = 31.6,
             for i in np.arange(len(τi_eq)):
                 Si_span[i,0,:,:] = np.eye(3)/3
                 if τi_eq[i] > τR:
-                    τi_span[i,0] = τi_eq[i]/2  + τR
+                    τi_span[i,0] = τi_eq[i]  + τR
                 else:
-                    τi_span[i,0] = τi_eq[i]/2
+                    τi_span[i,0] = τi_eq[i]
             τd_span[0] = np.sum(Gi * τi_span[:,0]**2)/np.sum(Gi * τi_span[:,0])
             λ_span[0] = 1
             for i in np.arange(len(τi_eq)):
@@ -264,9 +269,9 @@ def IM_Tumbling_Multimode_integral(λmax = 3.34, τR = 0.124, shear_rate = 31.6,
             #Si at time t
             Si_t = Si_span[i,ind-1,:,:]
             if τi_eq[i] > τR:
-                τi_t[i] = 1/2/(1/τi_eq[i] + np.trace(np.dot(κ,Si_t))) + τR
+                τi_t[i] = 1/(1/τi_eq[i] + β*r) + τR
             else:
-                τi_t[i] = 1/2/(1/τi_eq[i] + np.trace(np.dot(κ,Si_t)))
+                τi_t[i] = 1/(1/τi_eq[i] + β*r)
             #Si at time t update
             Si_t_update = S_integral(Q_span[:ind,:,:],δt,t,τi_span[i,:ind])
             Si_span[i,ind,:,:] = Si_t_update
@@ -283,6 +288,7 @@ def IM_Tumbling_Multimode_integral(λmax = 3.34, τR = 0.124, shear_rate = 31.6,
         φ = φ_span[ind]
         dλ_dt = φ * λ * np.trace(np.dot(κ,S_average_t_update)) - (λ * Fλ - 1) / τR
         λ_update = λ + dλ_dt * δt
+        r =  np.trace(np.dot(κ,S_average_t_update)) - 1/λ_update*dλ_dt # update r, tube loss rate
         λ_span[ind] = λ_update
         Fλ_update = (λmax**2 - λ_update**2/3)/(λmax**2 - λ_update**2)*(λmax**2 - 1)/(λmax**2 - 1/3)
         σ_update = np.zeros([3,3])

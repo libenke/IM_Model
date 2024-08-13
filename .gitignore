@@ -1,5 +1,7 @@
-__pycache__
-# Jupyter Notebook
-.ipynb_checkpoints
-
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+/*/.ipynb_checkpoints/
 *.csv
+.DS_Store
+__pycache__/
+*.swp
