@@ -245,10 +245,7 @@ def IM_Tumbling_Multimode_integral(λmax = 3.34, τR = 0.124, shear_rate = 31.6,
             S_average_span[0,:,:] = np.eye(3)/3
             for i in np.arange(len(τi_eq)):
                 Si_span[i,0,:,:] = np.eye(3)/3
-                if τi_eq[i] > τR:
-                    τi_span[i,0] = τi_eq[i]  + τR
-                else:
-                    τi_span[i,0] = τi_eq[i]
+                τi_span[i,0] = τi_eq[i]
             τd_span[0] = np.sum(Gi * τi_span[:,0]**2)/np.sum(Gi * τi_span[:,0])
             λ_span[0] = 1
             for i in np.arange(len(τi_eq)):
@@ -268,10 +265,7 @@ def IM_Tumbling_Multimode_integral(λmax = 3.34, τR = 0.124, shear_rate = 31.6,
         for i in np.arange(len(τi_eq)):
             #Si at time t
             Si_t = Si_span[i,ind-1,:,:]
-            if τi_eq[i] > τR:
-                τi_t[i] = 1/(1/τi_eq[i] + β*r) + τR
-            else:
-                τi_t[i] = 1/(1/τi_eq[i] + β*r)
+            τi_t[i] = 1/(1/τi_eq[i] + β*r)
             #Si at time t update
             Si_t_update = S_integral(Q_span[:ind,:,:],δt,t,τi_span[i,:ind])
             Si_span[i,ind,:,:] = Si_t_update
