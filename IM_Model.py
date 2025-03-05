@@ -20,6 +20,8 @@ def S_integral(Q_span,δt,t,τd_span):
                     [S01,S11,S12],\
                     [S02,S12,S22]])
     #plus the integral from time = 0 to time = -infinite
+    #import ipdb
+    #ipdb.set_trace()
     S = S_0_t + np.exp(-np.sum(1/τd_span)*δt) * Q_span[-1,:,:]
     return S
 
@@ -77,14 +79,14 @@ def IM_Multimode_integral(λmax = 3.34, τR = 0.124, shear_rate = 31.6, β = 0.2
                 τi_t[i] = 1/(1/τi_eq[i] + β*r) + τR
             else:
                 τi_t[i] = 1/(1/τi_eq[i] + β*r)
+            τi_span[i,ind] = τi_t[i]
             #Si at time t update
-            Si_t_update = S_integral(Q_span[:ind,:,:],δt,t,τi_span[i,:ind])
+            Si_t_update = S_integral(Q_span[:ind+1,:,:],δt,t,τi_span[i,:ind+1])
             Si_span[i,ind,:,:] = Si_t_update
-        τi_span[:,ind] = τi_t
         #τd = \sum Giτi^2 / (\sum Giτi)
         τd_span[ind] = np.sum(Gi * τi_span[:,ind]**2)/np.sum(Gi * τi_span[:,ind])
         #S_average at time t
-        S_average_t_update = S_integral(Q_span[:ind,:,:],δt,t,τd_span[:ind])
+        S_average_t_update = S_integral(Q_span[:ind+1,:,:],δt,t,τd_span[:ind+1])
         S_average_span[ind,:,:] = S_average_t_update
         
         #calculate the dλ_dt
@@ -266,14 +268,14 @@ def IM_Tumbling_Multimode_integral(λmax = 3.34, τR = 0.124, shear_rate = 31.6,
             #Si at time t
             Si_t = Si_span[i,ind-1,:,:]
             τi_t[i] = 1/(1/τi_eq[i] + β*r)
+            τi_span[i,ind] = τi_t[i]
             #Si at time t update
-            Si_t_update = S_integral(Q_span[:ind,:,:],δt,t,τi_span[i,:ind])
+            Si_t_update = S_integral(Q_span[:ind+1,:,:],δt,t,τi_span[i,:ind+1])
             Si_span[i,ind,:,:] = Si_t_update
-        τi_span[:,ind] = τi_t
         #τd = \sum Giτi^2 / (\sum Giτi)
         τd_span[ind] = np.sum(Gi * τi_span[:,ind]**2)/np.sum(Gi * τi_span[:,ind])
         #S_average at time t
-        S_average_t_update = S_integral(Q_span[:ind,:,:],δt,t,τd_span[:ind])
+        S_average_t_update = S_integral(Q_span[:ind+1,:,:],δt,t,τd_span[:ind+1])
         S_average_span[ind,:,:] = S_average_t_update
         
         #calculate the dλ_dt
