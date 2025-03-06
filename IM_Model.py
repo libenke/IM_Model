@@ -8,7 +8,7 @@ def S_integral(Q_span,δt,t,τd_span):
     #\int_t'^t dt''/taud(t'')
     τd_inv = 1/τd_span
     #exp[-\int_t'^t dt''/taud(t'')]
-    exp_minus_int_tp_t_τd_inv = np.exp(-np.cumsum(τd_inv[::-1]) * δt)[::-1]
+    exp_minus_int_tp_t_τd_inv = np.exp(-(np.cumsum(τd_inv[::-1])-τd_inv[-1]/2) * δt)[::-1]
     #integral from time=0 to time t
     S00 = np.sum(τd_inv * exp_minus_int_tp_t_τd_inv * Q_span[::-1,0,0]) * δt
     S01 = np.sum(τd_inv * exp_minus_int_tp_t_τd_inv * Q_span[::-1,0,1]) * δt
